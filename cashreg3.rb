@@ -1,5 +1,16 @@
 require 'csv'
 
+def print_options(hash)
+  puts "Welcome to Lydia's coffee emporium!"
+  puts
+  hash.each do |index, values|
+    puts "#{index}) Add item - #{format_currency(values["retail_price"])} - #{values["name"]}"
+  end
+  puts "4) Complete Sale"
+  puts "5) Reporting"
+  puts
+end
+
 def month_converter(num)
   if num == "01"
     "January"
@@ -28,8 +39,6 @@ def month_converter(num)
   end
 end
 
-
-
 def format_currency(value)
   "$#{sprintf('%.2f', value.to_f)}"
 end
@@ -49,25 +58,26 @@ def receipt(cash, sub_total)
   end
 end
 
-data = {}
+coffee_info = {}
 total = 0
 selection = 1
 complete_sale = {}
 
-i = 1
+index = 1
 CSV.foreach('products.csv', headers: true) do |row|
-  data[i] = {row.headers[0] => row[0], row.headers[1] => row[1], row.headers[2] => row[2].to_f, row.headers[3] => row[3].to_f}
-  i += 1
+  coffee_info[i] = {row.headers[0] => row[0], row.headers[1] => row[1], row.headers[2] => row[2].to_f, row.headers[3] => row[3].to_f}
+  index += 1
 end
 
-puts "Welcome to Lydia's coffee emporium!"
-puts
-data.each do |index, values|
-  puts "#{index}) Add item - #{format_currency(values["retail_price"])} - #{values["name"]}"
-end
-puts "4) Complete Sale"
-puts "5) Reporting"
-puts
+print_options(coffee_info)
+# puts "Welcome to Lydia's coffee emporium!"
+# puts
+# data.each do |index, values|
+#   puts "#{index}) Add item - #{format_currency(values["retail_price"])} - #{values["name"]}"
+# end
+# puts "4) Complete Sale"
+# puts "5) Reporting"
+# puts
 
 while  selection == 1 || selection == 2 || selection == 3
   puts "Make a selection:"
@@ -127,6 +137,7 @@ else
     date = gets.chomp
   end
   print "On #{month_converter(date.split("/")[0])} #{date.split("/")[1]}, #{date.split("/")[2]} we sold:"
+  puts
   puts
   datein = ''
   sales = 0.00
