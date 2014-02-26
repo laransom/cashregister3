@@ -1,7 +1,22 @@
 require 'csv'
 
+def get_from_csv(hash)
+  index = 1
+  CSV.foreach('products.csv', headers: true) do |row|
+    hash[index] = {row.headers[0] => row[0], row.headers[1] => row[1], row.headers[2] => row[2].to_f, row.headers[3] => row[3].to_f}
+  index += 1
+  end
+  hash
+end
+
+def subtotal(amount)
+  puts
+  puts "Subtotal: #{format_currency(amount)}"
+  puts
+end
+
 def print_options(hash)
-  puts "Welcome to Lydia's coffee emporium!"
+  puts "Welcome to Joe's coffee emporium!"
   puts
   hash.each do |index, values|
     puts "#{index}) Add item - #{format_currency(values["retail_price"])} - #{values["name"]}"
@@ -39,6 +54,17 @@ def month_converter(num)
   end
 end
 
+def sale_complete(hash_data, hash_quantity)
+  puts "===Sale Complete==="
+  puts
+  hash_quantity.each do |index, values|
+    puts "#{format_currency(hash_quantity[index]["quantity"] * hash_data[index]["retail_price"])} - #{hash_quantity[index]["quantity"]} #{hash_data[index]["name"]}"
+    File.open('report.csv', 'a') do |f|
+      f.puts Time.now.strftime("%m/%d/%Y") + ",#{hash_data[index]["SKU"]},#{hash_data[index]["name"]},#{hash_quantity[index]["quantity"]},#{(hash_quantity[index]["quantity"] * hash_data[index]["retail_price"].to_f)},#{((hash_quantity[index]["quantity"] * hash_data[index]["retail_price"].to_f) - (hash_quantity[index]["quantity"] * hash_data[index]["wholesale_price"].to_f))}"
+    end
+  end
+end
+
 def format_currency(value)
   "$#{sprintf('%.2f', value.to_f)}"
 end
@@ -58,47 +84,36 @@ def receipt(cash, sub_total)
   end
 end
 
+#++++++++++++++++++++++++++++PROGRAM++++++++++++++++++++++++++
+
 coffee_info = {}
 total = 0
 selection = 1
 complete_sale = {}
 
-index = 1
-CSV.foreach('products.csv', headers: true) do |row|
-  coffee_info[i] = {row.headers[0] => row[0], row.headers[1] => row[1], row.headers[2] => row[2].to_f, row.headers[3] => row[3].to_f}
-  index += 1
-end
+get_from_csv(coffee_info)
 
 print_options(coffee_info)
-# puts "Welcome to Lydia's coffee emporium!"
-# puts
-# data.each do |index, values|
-#   puts "#{index}) Add item - #{format_currency(values["retail_price"])} - #{values["name"]}"
-# end
-# puts "4) Complete Sale"
-# puts "5) Reporting"
-# puts
 
-while  selection == 1 || selection == 2 || selection == 3
+while (1..3) === selection
   puts "Make a selection:"
   selection = gets.chomp.to_i
   puts
-  if selection == 1 || selection == 2 || selection == 3
+  if (1..3) === selection
     puts "How many?"
     how_many = gets.chomp.to_i
       while how_many < 1
         puts "Please enter a valid number: "
         how_many = gets.chomp.to_i
       end
-    total += data[selection]["retail_price"].to_f * how_many
+    total += coffee_info[selection]["retail_price"].to_f * how_many
     if complete_sale[selection] == nil
       complete_sale[selection] = { "quantity" => how_many }
     else
       complete_sale[selection] = { "quantity" => how_many + complete_sale[selection]["quantity"] }
     end
-    puts
-    puts "Subtotal: #{format_currency(total)}"
-    puts
+    subtotal(total)
+
   elsif selection != 4  && selection != 5
     puts "Please make a valid selection"
     selection = 1
@@ -112,14 +127,8 @@ if selection == 4
       f.puts "date,SKU,name,quantity,revenue,profit"
     end
   end
-  puts "===Sale Complete==="
-  puts
-  complete_sale.each do |index, values|
-    puts "#{format_currency(complete_sale[index]["quantity"] * data[index]["retail_price"])} - #{complete_sale[index]["quantity"]} #{data[index]["name"]}"
-    File.open('report.csv', 'a') do |f|
-      f.puts Time.now.strftime("%m/%d/%Y") + ",#{data[index]["SKU"]},#{data[index]["name"]},#{complete_sale[index]["quantity"]},#{(complete_sale[index]["quantity"] * data[index]["retail_price"].to_f)},#{((complete_sale[index]["quantity"] * data[index]["retail_price"].to_f) - (complete_sale[index]["quantity"] * data[index]["wholesale_price"].to_f))}"
-    end
-  end
+
+  sale_complete(coffee_info, complete_sale)
 
   puts
   puts "Total: #{format_currency(total)}"
@@ -143,14 +152,14 @@ else
   sales = 0.00
   profits = 0.00
   CSV.foreach('report.csv', headers: true) do |row|
-    sales += row[4].to_f
-    profits += row[5].to_f
     datein = row[0]
     if date == datein
       puts "SKU #: #{row[1]}, Name: #{row[2]}, Quantity: #{row[3]}, Revenue: #{format_currency(row[4])}, Profit: #{format_currency(row[5])}"
+      profits += row[5].to_f
+      sales += row[4].to_f
     end
   end
-  if datein != date
+  if profits == 0
     puts "No Sales"
   else
     puts
